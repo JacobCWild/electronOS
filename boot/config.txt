@@ -1,0 +1,29 @@
+# Raspberry Pi OS Configuration File
+
+# Configuration settings for the boot process
+# Uncomment the following lines to enable specific features
+
+# Set the GPU memory allocation
+gpu_mem=128
+
+# Enable audio (uncomment to enable)
+# dtparam=audio=on
+
+# Set the console to serial
+# enable_uart=1
+
+# Set the boot delay (in seconds)
+boot_delay=0
+
+# Set the default resolution
+# hdmi_group=1
+# hdmi_mode=16
+
+# Enable USB booting (uncomment to enable)
+# program_usb_boot_mode=1
+
+# Additional configuration options can be added below
+# For example, to enable specific device tree overlays:
+# dtoverlay=your_overlay_name
+
+# End of config.txt
