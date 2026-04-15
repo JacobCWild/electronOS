@@ -1,0 +1,149 @@
+# ============================================================================
+# electronOS Plymouth Boot Script
+# ============================================================================
+# Displays the electronOS logo centered on screen with an animated
+# progress bar beneath it. Clean, minimal design inspired by macOS boot.
+# ============================================================================
+
+# ---- Background -----------------------------------------------------------
+Window.SetBackgroundTopColor(0.05, 0.05, 0.05);
+Window.SetBackgroundBottomColor(0.02, 0.02, 0.02);
+
+# ---- Screen dimensions ----------------------------------------------------
+screen_width  = Window.GetWidth();
+screen_height = Window.GetHeight();
+
+# ---- Logo -----------------------------------------------------------------
+logo_image = Image("logo.png");
+
+# Scale logo to a reasonable size (max 30% of screen width)
+logo_original_w = logo_image.GetWidth();
+logo_original_h = logo_image.GetHeight();
+max_logo_w = screen_width * 0.30;
+
+if (logo_original_w > max_logo_w) {
+    scale_factor = max_logo_w / logo_original_w;
+    logo_image = logo_image.Scale(
+        logo_original_w * scale_factor,
+        logo_original_h * scale_factor
+    );
+}
+
+logo_w = logo_image.GetWidth();
+logo_h = logo_image.GetHeight();
+logo_x = (screen_width  - logo_w) / 2;
+logo_y = (screen_height - logo_h) / 2 - 40;
+
+logo_sprite = Sprite(logo_image);
+logo_sprite.SetPosition(logo_x, logo_y, 10);
+logo_sprite.SetOpacity(1.0);
+
+# ---- Progress bar configuration -------------------------------------------
+bar_width    = Math.Min(400, screen_width * 0.30);
+bar_height   = 6;
+bar_x        = (screen_width - bar_width) / 2;
+bar_y        = logo_y + logo_h + 40;
+bar_radius   = bar_height / 2;
+
+# ---- Progress bar background (track) -------------------------------------
+bar_bg_image = Image(bar_width, bar_height);
+
+# Draw rounded track with dark grey
+for (px = 0; px < bar_width; px++) {
+    for (py = 0; py < bar_height; py++) {
+        bar_bg_image.SetPixel(px, py,
+            0.20, 0.20, 0.20, 1.0);
+    }
+}
+
+bar_bg_sprite = Sprite(bar_bg_image);
+bar_bg_sprite.SetPosition(bar_x, bar_y, 5);
+
+# ---- Progress bar fill ---------------------------------------------------
+# We create a full-width fill image and clip it via sprite width
+bar_fill_image = Image(bar_width, bar_height);
+
+for (px = 0; px < bar_width; px++) {
+    # Gradient from accent blue to accent cyan
+    r = 0.20 + (px / bar_width) * 0.10;
+    g = 0.56 + (px / bar_width) * 0.20;
+    b = 0.90 + (px / bar_width) * 0.05;
+    for (py = 0; py < bar_height; py++) {
+        bar_fill_image.SetPixel(px, py, r, g, b, 1.0);
+    }
+}
+
+progress_sprite = Sprite();
+progress_sprite.SetPosition(bar_x, bar_y, 6);
+
+# Track current progress
+global.progress_val = 0.0;
+
+# ---- Status text ----------------------------------------------------------
+status_sprite = Sprite();
+status_sprite.SetPosition(bar_x, bar_y + bar_height + 16, 7);
+
+# ---- Callbacks ------------------------------------------------------------
+
+fun boot_progress_cb(duration, progress) {
+    # progress is 0.0 to 1.0
+    if (progress > global.progress_val) {
+        global.progress_val = progress;
+    }
+
+    # Scale fill image to show progress
+    fill_w = Math.Int(bar_width * global.progress_val);
+    if (fill_w < 1) fill_w = 1;
+
+    cropped = bar_fill_image.Scale(fill_w, bar_height);
+    progress_sprite.SetImage(cropped);
+}
+
+Plymouth.SetBootProgressFunction(boot_progress_cb);
+
+fun update_status_cb(text) {
+    # We keep the status area minimal — just show text if provided
+    # Most of the time Plymouth themes hide verbose messages
+    status_image = Image.Text(text, 0.5, 0.5, 0.5, 1, "Sans 10");
+    status_sprite.SetImage(status_image);
+
+    text_w = status_image.GetWidth();
+    status_x = (screen_width - text_w) / 2;
+    status_sprite.SetPosition(status_x, bar_y + bar_height + 16, 7);
+}
+
+Plymouth.SetUpdateStatusFunction(update_status_cb);
+
+# ---- Password prompt (for LUKS unlock) ------------------------------------
+fun password_dialog_setup(prompt_text, bullets) {
+    dialog_image = Image.Text(prompt_text, 0.8, 0.8, 0.8, 1, "Sans 12");
+    dialog_sprite = Sprite(dialog_image);
+    dialog_x = (screen_width - dialog_image.GetWidth()) / 2;
+    dialog_y = bar_y + bar_height + 50;
+    dialog_sprite.SetPosition(dialog_x, dialog_y, 10);
+
+    # Draw bullet dots for password characters
+    bullet_text = "";
+    for (i = 0; i < bullets; i++) {
+        bullet_text += "● ";
+    }
+    if (bullets > 0) {
+        bullet_image = Image.Text(bullet_text, 0.9, 0.9, 0.9, 1, "Sans 14");
+        bullet_sprite = Sprite(bullet_image);
+        bullet_x = (screen_width - bullet_image.GetWidth()) / 2;
+        bullet_sprite.SetPosition(bullet_x, dialog_y + 30, 10);
+    }
+}
+
+Plymouth.SetDisplayPasswordFunction(password_dialog_setup);
+
+# ---- Quit callback --------------------------------------------------------
+fun quit_cb() {
+    # Fade out smoothly
+    logo_sprite.SetOpacity(0);
+    progress_sprite.SetOpacity(0);
+    bar_bg_sprite.SetOpacity(0);
+    status_sprite.SetOpacity(0);
+}
+
+Plymouth.SetQuitFunction(quit_cb);
