@@ -1,0 +1,32 @@
+# Build artifacts
+/build/
+/output/
+/dl/
+*.o
+*.so
+*.a
+*.img
+*.sdcard
+
+# Buildroot
+buildroot/dl/
+buildroot/output/
+buildroot/.config
+buildroot/.config.old
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Temporary files
+/tmp/

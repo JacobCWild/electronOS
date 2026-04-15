@@ -1,0 +1,61 @@
+# ============================================================================
+# electronOS Audit Rules
+# ============================================================================
+# Comprehensive audit logging for security-critical events.
+# Loaded by auditd on boot.
+# ============================================================================
+
+# Remove all existing rules
+-D
+
+# Set buffer size
+-b 8192
+
+# Failure mode (1 = printk, 2 = panic)
+-f 1
+
+# ---- Identity / Authentication -------------------------------------------
+# Monitor login/logout events
+-w /var/log/lastlog -p wa -k logins
+-w /var/run/faillock/ -p wa -k logins
+
+# Monitor PAM configuration
+-w /etc/pam.d/ -p wa -k pam_config
+
+# Monitor user/group changes
+-w /etc/passwd -p wa -k identity
+-w /etc/shadow -p wa -k identity
+-w /etc/group -p wa -k identity
+-w /etc/gshadow -p wa -k identity
+-w /etc/sudoers -p wa -k identity
+-w /etc/sudoers.d/ -p wa -k identity
+
+# ---- Privilege Escalation ------------------------------------------------
+# Monitor setuid/setgid calls
+-a always,exit -F arch=b64 -S setuid -S setgid -S setreuid -S setregid -k privilege_escalation
+-a always,exit -F arch=b64 -S execve -F euid=0 -F auid>=1000 -F auid!=4294967295 -k privilege_escalation
+
+# ---- File System ---------------------------------------------------------
+# Monitor critical system files
+-w /etc/ssh/sshd_config -p wa -k sshd_config
+-w /etc/nftables.conf -p wa -k firewall
+-w /etc/apparmor/ -p wa -k apparmor
+-w /etc/apparmor.d/ -p wa -k apparmor
+
+# Monitor boot configuration
+-w /boot/ -p wa -k boot_config
+
+# Monitor kernel modules
+-a always,exit -F arch=b64 -S init_module -S delete_module -S finit_module -k kernel_modules
+
+# ---- Network -------------------------------------------------------------
+# Monitor network configuration changes
+-w /etc/hosts -p wa -k network_config
+-w /etc/resolv.conf -p wa -k network_config
+-w /etc/hostname -p wa -k network_config
+
+# ---- System Time ---------------------------------------------------------
+-a always,exit -F arch=b64 -S adjtimex -S settimeofday -S clock_settime -k time_change
+
+# ---- Make rules immutable (must be last) ---------------------------------
+-e 2

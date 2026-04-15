@@ -1,0 +1,75 @@
+# ============================================================================
+# AppArmor Profile: electronOS Shell
+# ============================================================================
+# Provides a reasonable sandbox for the interactive shell.
+# Users can execute standard commands but critical system files are protected.
+# ============================================================================
+
+#include <tunables/global>
+
+/usr/bin/electronos-shell {
+    #include <abstractions/base>
+    #include <abstractions/bash>
+    #include <abstractions/consoles>
+    #include <abstractions/nameservice>
+
+    # Binary itself
+    /usr/bin/electronos-shell    mr,
+
+    # User home directory (full access)
+    owner @{HOME}/**             rw,
+    owner @{HOME}/               r,
+    owner @{HOME}/.electronos_history rw,
+
+    # Standard commands (execute)
+    /usr/bin/*                   ix,
+    /bin/*                       ix,
+    /usr/sbin/*                  ix,
+    /sbin/*                      ix,
+
+    # Read access to system files
+    /etc/passwd                  r,
+    /etc/group                   r,
+    /etc/hostname                r,
+    /etc/hosts                   r,
+    /etc/resolv.conf             r,
+    /etc/shells                  r,
+    /etc/motd                    r,
+    /etc/issue                   r,
+    /etc/os-release              r,
+    /proc/**                     r,
+    /sys/**                      r,
+
+    # Temporary files
+    /tmp/**                      rw,
+    /var/tmp/**                  rw,
+
+    # Libraries
+    /usr/lib/**                  mr,
+    /lib/**                      mr,
+
+    # Device access (limited)
+    /dev/tty*                    rw,
+    /dev/pts/**                  rw,
+    /dev/null                    rw,
+    /dev/zero                    r,
+    /dev/urandom                 r,
+
+    # Deny sensitive operations
+    deny /boot/** w,
+    deny /etc/shadow rw,
+    deny /etc/gshadow rw,
+    deny /etc/sudoers rw,
+    deny /etc/sudoers.d/** rw,
+    deny /proc/*/mem rw,
+    deny /proc/kcore rw,
+    deny /dev/kmem rw,
+    deny /dev/mem rw,
+
+    # Network access (for commands like ping, ssh, wget)
+    network inet stream,
+    network inet dgram,
+    network inet6 stream,
+    network inet6 dgram,
+    network inet raw,
+}

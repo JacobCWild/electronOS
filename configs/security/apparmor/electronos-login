@@ -1,0 +1,72 @@
+# ============================================================================
+# AppArmor Profile: electronOS Login Manager
+# ============================================================================
+# Restricts the login manager to only the resources it needs.
+# ============================================================================
+
+#include <tunables/global>
+
+/usr/bin/electronos-login {
+    #include <abstractions/base>
+    #include <abstractions/authentication>
+    #include <abstractions/nameservice>
+    #include <abstractions/fonts>
+    #include <abstractions/X>
+
+    # Binary itself
+    /usr/bin/electronos-login    mr,
+
+    # PAM authentication
+    /etc/pam.d/electronos-login  r,
+    /etc/pam.d/common-*          r,
+    /etc/security/**             r,
+    /etc/login.defs              r,
+    /etc/default/login           r,
+
+    # User database
+    /etc/passwd                  r,
+    /etc/shadow                  r,
+    /etc/group                   r,
+    /etc/gshadow                 r,
+    /etc/shells                  r,
+
+    # SDL2 / DRM graphics
+    /dev/dri/**                  rw,
+    /dev/fb*                     rw,
+    /dev/tty*                    rw,
+    /dev/input/**                r,
+    /sys/class/drm/**            r,
+    /sys/devices/**              r,
+
+    # Assets
+    /usr/share/electronos/**     r,
+    /usr/share/fonts/**          r,
+    /usr/share/plymouth/**       r,
+
+    # Libraries
+    /usr/lib/**                  mr,
+    /lib/**                      mr,
+
+    # Temporary files
+    /tmp/.SDL*                   rw,
+    /run/user/*/                 rw,
+
+    # Spawning user sessions
+    /usr/bin/electronos-shell    px,
+    /bin/bash                    px,
+    /bin/sh                      px,
+
+    # Deny dangerous operations
+    deny /boot/** w,
+    deny /etc/shadow w,
+    deny /etc/passwd w,
+    deny /proc/*/mem rw,
+
+    # Capabilities needed for setuid/setgid on login
+    capability setuid,
+    capability setgid,
+    capability sys_admin,
+    capability chown,
+    capability dac_override,
+    capability fowner,
+}

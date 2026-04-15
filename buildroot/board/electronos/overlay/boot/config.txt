@@ -1,0 +1,28 @@
+# ============================================================================
+# electronOS — Raspberry Pi 5 Boot Configuration
+# ============================================================================
+
+# Kernel
+kernel=Image
+arm_64bit=1
+arm_boost=1
+
+# GPU / Display
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+gpu_mem=256
+disable_overscan=1
+hdmi_force_hotplug=1
+
+# Boot behavior
+boot_delay=0
+disable_splash=1
+
+# Enable hardware RNG for security
+dtparam=random=on
+
+# Enable hardware watchdog
+dtparam=watchdog=on
+
+# UART (for debug, can be disabled in production)
+enable_uart=1
