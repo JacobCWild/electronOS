@@ -1,82 +1,115 @@
-CC = gcc
-AS = as
-LD = ld
-CFLAGS = -Wall -Wextra -Iinclude
-LDFLAGS = -T kernel/kernel.ld
+# ============================================================================
+# electronOS — Top-level Makefile
+# ============================================================================
+# Usage:
+#   make setup          — Download Buildroot and prepare the build tree
+#   make config         — Apply the electronOS defconfig
+#   make build          — Build the full OS image
+#   make menuconfig     — Open Buildroot interactive configuration
+#   make clean          — Clean build artifacts
+#   make flash SD=/dev/sdX — Flash image to SD card
+# ============================================================================
 
-# Directories
-KERNEL_DIR = kernel
-DRIVERS_DIR = drivers
-FS_DIR = fs
-LIB_DIR = lib
-USER_DIR = user
+BUILDROOT_VERSION := 2024.11.1
+BUILDROOT_DIR     := build/buildroot-$(BUILDROOT_VERSION)
+BUILDROOT_URL     := https://buildroot.org/downloads/buildroot-$(BUILDROOT_VERSION).tar.xz
+EXTERNAL_DIR      := $(CURDIR)/buildroot/external
+BOARD_DIR         := $(CURDIR)/buildroot/board/electronos
+DEFCONFIG         := electronos_rpi5_defconfig
+OUTPUT_DIR        := $(CURDIR)/output
+IMAGE             := $(OUTPUT_DIR)/images/sdcard.img
 
-# Source files
-KERNEL_SRC = $(KERNEL_DIR)/kernel.c $(KERNEL_DIR)/start.S
-DRIVERS_SRC = $(DRIVERS_DIR)/gpio.c $(DRIVERS_DIR)/uart.c $(DRIVERS_DIR)/timer.c
-FS_SRC = $(FS_DIR)/vfs.c $(FS_DIR)/fat32.c
-LIB_SRC = $(LIB_DIR)/string.c $(LIB_DIR)/stdio.c
-USER_SRC = $(USER_DIR)/shell.c
+.PHONY: all setup config build menuconfig clean flash help
 
-# Object files
-KERNEL_OBJ = $(KERNEL_SRC:.c=.o) $(KERNEL_SRC:.S=.o)
-DRIVERS_OBJ = $(DRIVERS_SRC:.c=.o)
-FS_OBJ = $(FS_SRC:.c=.o)
-LIB_OBJ = $(LIB_SRC:.c=.o)
-USER_OBJ = $(USER_SRC:.c=.o)
+all: build
 
-# Final output
-OUTPUT = os_image.bin
+# ---- Setup ----------------------------------------------------------------
+setup:
+	@echo "==> Downloading Buildroot $(BUILDROOT_VERSION)..."
+	@mkdir -p build dl
+	@if [ ! -d "$(BUILDROOT_DIR)" ]; then \
+		wget -q -P dl "$(BUILDROOT_URL)" 2>/dev/null || \
+		curl -sL -o "dl/buildroot-$(BUILDROOT_VERSION).tar.xz" "$(BUILDROOT_URL)"; \
+		tar -xf "dl/buildroot-$(BUILDROOT_VERSION).tar.xz" -C build; \
+	fi
+	@echo "==> Buildroot ready at $(BUILDROOT_DIR)"
 
-all: $(OUTPUT)
+# ---- Configuration --------------------------------------------------------
+config: setup
+	@echo "==> Applying $(DEFCONFIG)..."
+	@cp buildroot/configs/$(DEFCONFIG) $(BUILDROOT_DIR)/configs/
+	$(MAKE) -C $(BUILDROOT_DIR) \
+		BR2_EXTERNAL="$(EXTERNAL_DIR)" \
+		O="$(OUTPUT_DIR)" \
+		$(DEFCONFIG)
 
-$(OUTPUT): $(KERNEL_OBJ) $(DRIVERS_OBJ) $(FS_OBJ) $(LIB_OBJ) $(USER_OBJ)
-	$(LD) $(LDFLAGS) -o $@ $^
+# ---- Build ----------------------------------------------------------------
+build: config
+	@echo "==> Building electronOS image..."
+	$(MAKE) -C $(BUILDROOT_DIR) \
+		BR2_EXTERNAL="$(EXTERNAL_DIR)" \
+		O="$(OUTPUT_DIR)"
+	@echo ""
+	@echo "============================================="
+	@echo "  electronOS image built successfully!"
+	@echo "  Image: $(IMAGE)"
+	@echo "============================================="
 
-%.o: %.c
-	$(CC) $(CFLAGS) -c $< -o $@
+# ---- Interactive config ---------------------------------------------------
+menuconfig: setup
+	$(MAKE) -C $(BUILDROOT_DIR) \
+		BR2_EXTERNAL="$(EXTERNAL_DIR)" \
+		O="$(OUTPUT_DIR)" \
+		menuconfig
 
-%.o: %.S
-	$(AS) -o $@ $<
+linux-menuconfig: setup
+	$(MAKE) -C $(BUILDROOT_DIR) \
+		BR2_EXTERNAL="$(EXTERNAL_DIR)" \
+		O="$(OUTPUT_DIR)" \
+		linux-menuconfig
 
+# ---- Flash to SD card -----------------------------------------------------
+flash:
+	@if [ -z "$(SD)" ]; then \
+		echo "Error: specify target device, e.g. make flash SD=/dev/sdX"; \
+		exit 1; \
+	fi
+	@if [ ! -f "$(IMAGE)" ]; then \
+		echo "Error: image not found at $(IMAGE). Run 'make build' first."; \
+		exit 1; \
+	fi
+	@echo "==> Flashing $(IMAGE) to $(SD)..."
+	@echo "    WARNING: This will ERASE all data on $(SD)!"
+	@read -p "    Continue? [y/N] " confirm && [ "$$confirm" = "y" ] || exit 1
+	sudo dd if="$(IMAGE)" of="$(SD)" bs=4M status=progress conv=fsync
+	sudo sync
+	@echo "==> Flash complete. You can now boot your Raspberry Pi 5."
+
+# ---- Clean ----------------------------------------------------------------
 clean:
-	rm -f $(KERNEL_OBJ) $(DRIVERS_OBJ) $(FS_OBJ) $(LIB_OBJ) $(USER_OBJ) $(OUTPUT)
+	@echo "==> Cleaning build artifacts..."
+	rm -rf $(OUTPUT_DIR)
 
-.PHONY: all clean
+distclean: clean
+	@echo "==> Removing Buildroot sources..."
+	rm -rf build dl
 
-# Should I use the one below?
-
-#CROSS_COMPILE = arm-none-eabi-
-#CC = $(CROSS_COMPILE)gcc
-#LD = $(CROSS_COMPILE)ld
-#OBJCOPY = $(CROSS_COMPILE)objcopy
-
-#CFLAGS = -Wall -O2 -nostdlib -nostartfiles -ffreestanding
-#LDFLAGS = -T linker.ld
-#
-#SRC = \
-#    kernel.c \
-#    drivers/gpio.c \
-#    drivers/framebuffer.c \
-#    drivers/mailbox.c \
-#    drivers/font.c \
-#    fs/fat32.c \
-#    user/shell.c
-#
-#OBJ = $(SRC:.c=.o)
-#
-#all: kernel.img
-#
-#%.o: %.c
-#    $(CC) $(CFLAGS) -c $< -o $@
-#
-#kernel.elf: $(OBJ)
-#    $(LD) $(LDFLAGS) -o $@ $^
-#
-#kernel.img: kernel.elf
-#    $(OBJCOPY) kernel.elf -O binary $@
-#
-#clean:
-#    rm -f $(OBJ) kernel.elf kernel.img
-#
-#.PHONY: all clean
+# ---- Help -----------------------------------------------------------------
+help:
+	@echo "electronOS Build System"
+	@echo "======================="
+	@echo ""
+	@echo "Targets:"
+	@echo "  setup          Download Buildroot"
+	@echo "  config         Apply electronOS configuration"
+	@echo "  build          Build the complete OS image"
+	@echo "  menuconfig     Interactive Buildroot configuration"
+	@echo "  linux-menuconfig  Interactive kernel configuration"
+	@echo "  flash SD=/dev/sdX  Flash image to SD card"
+	@echo "  clean          Remove build output"
+	@echo "  distclean      Remove everything (including downloads)"
+	@echo ""
+	@echo "Requirements:"
+	@echo "  - Linux host (Ubuntu 22.04+ recommended)"
+	@echo "  - ~15GB free disk space"
+	@echo "  - Internet connection (first build only)"

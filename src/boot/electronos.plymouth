@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=electronOS
+Description=electronOS boot splash with logo and progress bar
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/electronos
+ScriptFile=/usr/share/plymouth/themes/electronos/electronos.script

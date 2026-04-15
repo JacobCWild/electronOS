@@ -1,0 +1,6 @@
+config BR2_PACKAGE_ELECTRONOS_BOOT
+	bool "electronos-boot"
+	depends on BR2_PACKAGE_PLYMOUTH
+	help
+	  Custom Plymouth boot theme for electronOS.
+	  Displays the electronOS logo with an animated progress bar.

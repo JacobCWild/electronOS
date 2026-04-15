@@ -1,0 +1,26 @@
+# ============================================================================
+# electronOS — Kernel Graphics Configuration Fragment
+# ============================================================================
+
+# ---- DRM / KMS -----------------------------------------------------------
+CONFIG_DRM=y
+CONFIG_DRM_V3D=y
+CONFIG_DRM_VC4=y
+CONFIG_DRM_FBDEV_EMULATION=y
+
+# ---- Framebuffer ---------------------------------------------------------
+CONFIG_FB=y
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+
+# ---- Input ----------------------------------------------------------------
+CONFIG_INPUT_EVDEV=y
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_INPUT_MOUSE=y
+CONFIG_INPUT_TOUCHSCREEN=y
+
+# ---- Console / TTY -------------------------------------------------------
+CONFIG_VT=y
+CONFIG_VT_CONSOLE=y
+CONFIG_FONT_SUPPORT=y
+CONFIG_FONT_8x16=y

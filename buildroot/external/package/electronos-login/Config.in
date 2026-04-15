@@ -1,0 +1,9 @@
+config BR2_PACKAGE_ELECTRONOS_LOGIN
+	bool "electronos-login"
+	depends on BR2_PACKAGE_SDL2
+	depends on BR2_PACKAGE_SDL2_IMAGE
+	depends on BR2_PACKAGE_SDL2_TTF
+	depends on BR2_PACKAGE_LIBPAM
+	help
+	  Custom graphical login manager for electronOS.
+	  macOS-style login screen with PAM authentication.

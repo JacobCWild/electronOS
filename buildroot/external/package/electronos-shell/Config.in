@@ -1,0 +1,6 @@
+config BR2_PACKAGE_ELECTRONOS_SHELL
+	bool "electronos-shell"
+	help
+	  Custom command shell for electronOS.
+	  Provides a user-friendly terminal interface with built-in
+	  help for the 30 most common system commands.

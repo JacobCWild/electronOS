@@ -1,0 +1,26 @@
+# ============================================================================
+# electronOS Login Manager — PAM Configuration
+# ============================================================================
+# Secure authentication stack with:
+#   - Account lockout after 5 failed attempts (10 minute window)
+#   - Password quality enforcement via cracklib
+#   - Session audit logging
+# ============================================================================
+
+# Account lockout: 5 failures = 10 minute lock
+auth     required   pam_faillock.so preauth silent deny=5 unlock_time=600
+auth     required   pam_unix.so try_first_pass
+auth     required   pam_faillock.so authfail deny=5 unlock_time=600
+
+# Account management
+account  required   pam_unix.so
+account  required   pam_faillock.so
+
+# Password policy: minimum quality requirements
+password required   pam_cracklib.so retry=3 minlen=8 difok=3 ucredit=-1 lcredit=-1 dcredit=-1
+password required   pam_unix.so sha512 shadow use_authtok
+
+# Session setup
+session  required   pam_unix.so
+session  required   pam_limits.so
+session  optional   pam_umask.so umask=0077
