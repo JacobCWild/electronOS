@@ -119,12 +119,12 @@ make -C "build/buildroot-"* \
 END_TIME=$(date +%s)
 ELAPSED=$(( END_TIME - START_TIME ))
 MINUTES=$(( ELAPSED / 60 ))
-SECONDS=$(( ELAPSED % 60 ))
+SECS=$(( ELAPSED % 60 ))
 
 # ---- Done -----------------------------------------------------------------
 echo ""
 echo -e "${GREEN}  ═══════════════════════════════════════════${NC}"
-echo -e "${GREEN}  electronOS build complete! (${MINUTES}m ${SECONDS}s)${NC}"
+echo -e "${GREEN}  electronOS build complete! (${MINUTES}m ${SECS}s)${NC}"
 echo -e "${GREEN}  ═══════════════════════════════════════════${NC}"
 echo ""
 echo -e "  Image: ${CYAN}${PROJECT_DIR}/output/images/sdcard.img${NC}"
