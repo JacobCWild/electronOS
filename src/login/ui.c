@@ -16,20 +16,41 @@
 #include <string.h>
 #include <time.h>
 #include <math.h>
+#include <SDL2/SDL_image.h>
 
 /* ---- Color palette (macOS-inspired dark theme) -------------------------- */
-#define BG_R  13,  BG_G  13,  BG_B  13      /* Near-black background       */
-#define FG_R 230,  FG_G 230,  FG_B 230      /* Primary text                */
-#define DIM_R 140, DIM_G 140, DIM_B 140     /* Secondary/hint text         */
-#define FIELD_R 45, FIELD_G 45, FIELD_B 45  /* Input field background      */
-#define FIELD_BORDER_R 80, FIELD_BORDER_G 80, FIELD_BORDER_B 80
-#define ACCENT_R 50, ACCENT_G 140, ACCENT_B 230  /* Blue accent            */
-#define ERROR_R 230, ERROR_G 70,  ERROR_B 70     /* Red error               */
-#define SUCCESS_R 60, SUCCESS_G 180, SUCCESS_B 80 /* Green success          */
+#define BG_R   13
+#define BG_G   13
+#define BG_B   13       /* Near-black background       */
+#define FG_R  230
+#define FG_G  230
+#define FG_B  230       /* Primary text                */
+#define DIM_R  140
+#define DIM_G  140
+#define DIM_B  140      /* Secondary/hint text         */
+#define FIELD_R  45
+#define FIELD_G  45
+#define FIELD_B  45     /* Input field background      */
+#define FIELD_BORDER_R  80
+#define FIELD_BORDER_G  80
+#define FIELD_BORDER_B  80
+#define ACCENT_R  50
+#define ACCENT_G 140
+#define ACCENT_B 230    /* Blue accent                 */
+#define ERROR_R  230
+#define ERROR_G   70
+#define ERROR_B   70    /* Red error                   */
+#define SUCCESS_R  60
+#define SUCCESS_G 180
+#define SUCCESS_B  80   /* Green success               */
 
 /* Avatar colors (gradient circle) */
-#define AVATAR_R1 100, AVATAR_G1 140, AVATAR_B1 220
-#define AVATAR_R2  60, AVATAR_G2 100, AVATAR_B2 180
+#define AVATAR_R1 100
+#define AVATAR_G1 140
+#define AVATAR_B1 220
+#define AVATAR_R2  60
+#define AVATAR_G2 100
+#define AVATAR_B2 180
 
 /* ---- Sizes -------------------------------------------------------------- */
 #define AVATAR_RADIUS    48
@@ -418,9 +439,7 @@ void login_ui_render(login_ui_t *ui) {
     /* ---- Username display / field --------------------------------------- */
     SDL_Color white = {FG_R, FG_G, FG_B, 255};
     SDL_Color dim   = {DIM_R, DIM_G, DIM_B, 255};
-    SDL_Color accent = {ACCENT_R, ACCENT_G, ACCENT_B, 255};
     SDL_Color error_col = {ERROR_R, ERROR_G, ERROR_B, 255};
-    SDL_Color success_col = {SUCCESS_R, SUCCESS_G, SUCCESS_B, 255};
 
     int content_y = avatar_cy + AVATAR_RADIUS + 20;
 

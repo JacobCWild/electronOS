@@ -17,6 +17,7 @@
 #include <pwd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <grp.h>
 #include <errno.h>
 #include <time.h>
 
@@ -81,7 +82,9 @@ static void launch_session(const char *username, const char *shell) {
         setenv("TERM", "linux", 1);
 
         if (chdir(pw->pw_dir) != 0) {
-            chdir("/");
+            if (chdir("/") != 0) {
+                perror("chdir");
+            }
         }
 
         /* Execute shell as login shell */

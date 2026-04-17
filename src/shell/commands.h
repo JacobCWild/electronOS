@@ -37,6 +37,9 @@ int cmd_alias(int argc, char **argv);
 int cmd_export(int argc, char **argv);
 int cmd_sysinfo(int argc, char **argv);
 
+/* ---- History ------------------------------------------------------------ */
+void history_add(const char *line);
+
 /* ---- Utility functions -------------------------------------------------- */
 void commands_print_table(void);
 void commands_print_welcome(void);

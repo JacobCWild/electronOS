@@ -14,7 +14,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define PAM_SERVICE "electronos-login"
+#define ELECTRONOS_PAM_SERVICE "electronos-login"
 
 /* ---- PAM conversation callback ------------------------------------------ */
 
@@ -82,7 +82,7 @@ auth_result_t auth_authenticate(const char *username, const char *password,
         .appdata_ptr = &conv_data,
     };
 
-    int ret = pam_start(PAM_SERVICE, username, &conv, &pamh);
+    int ret = pam_start(ELECTRONOS_PAM_SERVICE, username, &conv, &pamh);
     if (ret != PAM_SUCCESS) {
         fprintf(stderr, "pam_start failed: %s\n", pam_strerror(pamh, ret));
         return AUTH_ERROR;
