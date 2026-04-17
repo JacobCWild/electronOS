@@ -55,8 +55,8 @@ PACKAGES=(
 )
 
 echo -e "  Installing: ${YELLOW}${PACKAGES[*]}${NC}"
-echo ${sudo apt-get update -qq}
-sudo apt-get install -y -qq "${PACKAGES[@]}"
+sudo apt-get update
+sudo apt-get install -y "${PACKAGES[@]}"
 echo -e "  ${GREEN}Done.${NC}"
 
 # ---- Build components locally ---------------------------------------------
