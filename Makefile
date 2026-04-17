@@ -10,6 +10,12 @@
 #   make flash SD=/dev/sdX — Flash image to SD card
 # ============================================================================
 
+# Clean environment variables that interfere with Buildroot
+override undefine LD_LIBRARY_PATH
+override SHELL := /bin/bash
+override PATH := /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
+
 BUILDROOT_VERSION := 2024.11.1
 BUILDROOT_DIR     := build/buildroot-$(BUILDROOT_VERSION)
 BUILDROOT_URL     := https://buildroot.org/downloads/buildroot-$(BUILDROOT_VERSION).tar.xz

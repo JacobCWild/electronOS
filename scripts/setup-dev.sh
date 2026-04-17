@@ -18,9 +18,21 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
+# ---- Spinner function for background tasks --------------------------------
+spinner() {
+    local spin=( '⠋' '⠙' '⠹' '⠸' '⠼' '⠴' '⠦' '⠧' '⠇' '⠏' )
+    local i=0
+    while [ -d /proc/$! ] 2>/dev/null; do
+        printf "\r  ${YELLOW}${spin[$i]}${NC} "
+        i=$(( (i+1) % ${#spin[@]} ))
+        sleep 0.1
+    done
+    printf "\r"
+}
+
 echo -e "${CYAN}"
 echo "  ┌─────────────────────────────────────┐"
-echo "  │   electronOS Dev Environment Setup   │"
+echo "  │   electronOS Dev Environment Setup  │"
 echo "  └─────────────────────────────────────┘"
 echo -e "${NC}"
 
@@ -55,9 +67,12 @@ PACKAGES=(
 )
 
 echo -e "  Installing: ${YELLOW}${PACKAGES[*]}${NC}"
-sudo apt-get update
-sudo apt-get install -y "${PACKAGES[@]}"
-echo -e "  ${GREEN}Done.${NC}"
+printf "  ${YELLOW}⠋${NC} Installing dependencies"
+sudo apt-get update > /dev/null 2>&1 &
+spinner
+sudo apt-get install -y "${PACKAGES[@]}" > /dev/null 2>&1 &
+spinner
+printf "${GREEN}Done.${NC}\n"
 
 # ---- Build components locally ---------------------------------------------
 echo -e "\n${CYAN}[2/3] Building electronOS components...${NC}"
