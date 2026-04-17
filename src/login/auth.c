@@ -3,6 +3,9 @@
  * ===========================================================================
  * Uses Linux PAM to authenticate users. The PAM service name is
  * "electronos-login" (configured in /etc/pam.d/electronos-login).
+ *
+ * The PAM handle is kept alive for the duration of the user session
+ * so that pam_close_session can be called properly on logout.
  * =========================================================================== */
 
 #include "auth.h"
@@ -10,9 +13,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <security/pam_appl.h>
 
-#define PAM_SERVICE "electronos-login"
+#define ELECTRONOS_PAM_SERVICE "electronos-login"
 
 /* ---- PAM conversation callback ------------------------------------------ */
 
@@ -68,8 +70,9 @@ static int pam_conversation(int num_msg, const struct pam_message **msg,
 
 /* ---- Public API --------------------------------------------------------- */
 
-auth_result_t auth_authenticate(const char *username, const char *password) {
-    if (!username || !password) return AUTH_ERROR;
+auth_result_t auth_authenticate(const char *username, const char *password,
+                                auth_session_t *session) {
+    if (!username || !password || !session) return AUTH_ERROR;
 
     pam_handle_t *pamh = NULL;
     auth_conv_data_t conv_data = { .password = password };
@@ -79,7 +82,7 @@ auth_result_t auth_authenticate(const char *username, const char *password) {
         .appdata_ptr = &conv_data,
     };
 
-    int ret = pam_start(PAM_SERVICE, username, &conv, &pamh);
+    int ret = pam_start(ELECTRONOS_PAM_SERVICE, username, &conv, &pamh);
     if (ret != PAM_SUCCESS) {
         fprintf(stderr, "pam_start failed: %s\n", pam_strerror(pamh, ret));
         return AUTH_ERROR;
@@ -104,12 +107,28 @@ auth_result_t auth_authenticate(const char *username, const char *password) {
         return AUTH_FAILURE;
     }
 
-    /* Open session */
+    /* Open session — the handle is kept alive until auth_close_session() */
     ret = pam_open_session(pamh, 0);
     if (ret != PAM_SUCCESS) {
         fprintf(stderr, "pam_open_session: %s\n", pam_strerror(pamh, ret));
+        pam_end(pamh, ret);
+        return AUTH_ERROR;
     }
 
-    pam_end(pamh, PAM_SUCCESS);
+    /* Return the PAM handle to the caller for later cleanup */
+    session->pamh = pamh;
     return AUTH_SUCCESS;
+}
+
+void auth_close_session(auth_session_t *session) {
+    if (!session || !session->pamh) return;
+
+    int ret = pam_close_session(session->pamh, 0);
+    if (ret != PAM_SUCCESS) {
+        fprintf(stderr, "pam_close_session: %s\n",
+                pam_strerror(session->pamh, ret));
+    }
+
+    pam_end(session->pamh, PAM_SUCCESS);
+    session->pamh = NULL;
 }

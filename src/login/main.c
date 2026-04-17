@@ -17,6 +17,7 @@
 #include <pwd.h>
 #include <signal.h>
 #include <sys/wait.h>
+#include <grp.h>
 #include <errno.h>
 #include <time.h>
 
@@ -81,7 +82,9 @@ static void launch_session(const char *username, const char *shell) {
         setenv("TERM", "linux", 1);
 
         if (chdir(pw->pw_dir) != 0) {
-            chdir("/");
+            if (chdir("/") != 0) {
+                perror("chdir");
+            }
         }
 
         /* Execute shell as login shell */
@@ -120,7 +123,8 @@ int main(int argc, char *argv[]) {
     sa.sa_handler = signal_handler;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
-    sigaction(SIGCHLD, &sa, NULL);
+    /* SIGCHLD: use SIG_IGN so child exits don't terminate the login loop */
+    sigaction(SIGCHLD, &(struct sigaction){ .sa_handler = SIG_IGN }, NULL);
 
     /* Initialize SDL2 */
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
@@ -233,8 +237,9 @@ int main(int argc, char *argv[]) {
 
         /* Check if login was submitted */
         if (ui.state == LOGIN_STATE_SUBMITTED) {
+            auth_session_t auth_session = { .pamh = NULL };
             auth_result_t result = auth_authenticate(
-                ui.username, ui.password_buf
+                ui.username, ui.password_buf, &auth_session
             );
 
             if (result == AUTH_SUCCESS) {
@@ -255,11 +260,14 @@ int main(int argc, char *argv[]) {
 
                 if (g_test_mode) {
                     printf("LOGIN OK: user=%s shell=%s\n", ui.username, shell);
+                    auth_close_session(&auth_session);
                     g_running = 0;
                 } else {
                     /* Hide window, launch session, show again */
                     SDL_HideWindow(window);
                     launch_session(ui.username, shell);
+                    /* Close PAM session after user logs out */
+                    auth_close_session(&auth_session);
                     SDL_ShowWindow(window);
                     login_ui_reset(&ui);
                 }

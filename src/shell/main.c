@@ -33,7 +33,7 @@
 /* ---- Constants ---------------------------------------------------------- */
 #define MAX_ARGS    256
 #define MAX_PIPES   16
-#define PROMPT_SIZE 512
+#define PROMPT_SIZE 8192
 
 /* ---- Globals ------------------------------------------------------------ */
 static volatile sig_atomic_t g_child_pid = 0;
@@ -44,7 +44,7 @@ static void sigint_handler(int sig) {
     if (g_child_pid > 0) {
         kill(g_child_pid, SIGINT);
     } else {
-        write(STDOUT_FILENO, "\n", 1);
+        if (write(STDOUT_FILENO, "\n", 1) < 0) { /* ignore */ }
         rl_on_new_line();
         rl_replace_line("", 0);
         rl_redisplay();
