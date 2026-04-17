@@ -40,7 +40,7 @@ done
 
 echo -e "${CYAN}"
 echo "  ┌─────────────────────────────────────┐"
-echo "  │      electronOS Build System         │"
+echo "  │      electronOS Build System        │"
 echo "  └─────────────────────────────────────┘"
 echo -e "${NC}"
 
