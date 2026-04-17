@@ -25,6 +25,10 @@ DEPS_ONLY=false
 CLEAN=false
 JOBS=$(nproc 2>/dev/null || echo 4)
 
+# Clean environment variables that interfere with Buildroot
+unset LD_LIBRARY_PATH
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
 # Parse arguments
 while [[ $# -gt 0 ]]; do
     case "$1" in
