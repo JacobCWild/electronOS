@@ -25,38 +25,38 @@ echo "  └───────────────────────
 echo -e "${NC}"
 
 # ---- Install development dependencies ------------------------------------
-echo -e "${CYAN}[1/3] Installing development dependencies...${NC}"
+# echo -e "${CYAN}[1/3] Installing development dependencies...${NC}"
 
-PACKAGES=(
+# PACKAGES=(
     # Core build tools
-    build-essential
-    gcc
-    make
-    pkg-config
+    # build-essential
+    # gcc
+    # make
+    # pkg-config
 
     # SDL2 for login manager
-    libsdl2-dev
-    libsdl2-image-dev
-    libsdl2-ttf-dev
+    # libsdl2-dev
+    # libsdl2-image-dev
+    # libsdl2-ttf-dev
 
     # PAM for authentication
-    libpam0g-dev
+    # libpam0g-dev
 
     # Readline for shell
-    libreadline-dev
+    # libreadline-dev
 
     # Fonts
-    fonts-dejavu-core
+    # fonts-dejavu-core
 
     # Useful for testing
-    valgrind
-    gdb
-    strace
-)
+    # valgrind
+    # gdb
+    # strace
+# )
 
-echo -e "  Installing: ${YELLOW}${PACKAGES[*]}${NC}"
-sudo apt-get update -qq
-sudo apt-get install -y -qq "${PACKAGES[@]}"
+# echo -e "  Installing: ${YELLOW}${PACKAGES[*]}${NC}"
+# sudo apt-get update -qq
+# sudo apt-get install -y -qq "${PACKAGES[@]}"
 echo -e "  ${GREEN}Done.${NC}"
 
 # ---- Build components locally ---------------------------------------------
