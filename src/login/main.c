@@ -123,8 +123,10 @@ int main(int argc, char *argv[]) {
     sa.sa_handler = signal_handler;
     sigaction(SIGINT, &sa, NULL);
     sigaction(SIGTERM, &sa, NULL);
-    /* SIGCHLD: use SIG_IGN so child exits don't terminate the login loop */
-    sigaction(SIGCHLD, &(struct sigaction){ .sa_handler = SIG_IGN }, NULL);
+    /* SIGCHLD: use SIG_DFL so child exits don't terminate the login loop
+     * but waitpid() still works correctly (SIG_IGN causes auto-reap which
+     * breaks waitpid semantics — it returns -1/ECHILD instead of status). */
+    sigaction(SIGCHLD, &(struct sigaction){ .sa_handler = SIG_DFL }, NULL);
 
     /* Initialize SDL2 */
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) != 0) {
@@ -237,7 +239,7 @@ int main(int argc, char *argv[]) {
 
         /* Check if login was submitted */
         if (ui.state == LOGIN_STATE_SUBMITTED) {
-            auth_session_t auth_session = { .pamh = NULL };
+            auth_session_t auth_session = { .pamh = NULL, .conv = NULL };
             auth_result_t result = auth_authenticate(
                 ui.username, ui.password_buf, &auth_session
             );

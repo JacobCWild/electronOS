@@ -16,7 +16,7 @@
 
 #define ELECTRONOS_PAM_SERVICE "electronos-login"
 
-/* ---- PAM conversation callback ------------------------------------------ */
+/* ---- PAM conversation callbacks ----------------------------------------- */
 
 typedef struct {
     const char *password;
@@ -68,6 +68,29 @@ static int pam_conversation(int num_msg, const struct pam_message **msg,
     return PAM_SUCCESS;
 }
 
+/*
+ * No-op conversation used after authentication succeeds.
+ * Replaces the stack-local password-bearing conversation so the PAM
+ * handle never holds a dangling pointer once auth_authenticate returns.
+ */
+static int noop_conversation(int num_msg, const struct pam_message **msg,
+                             struct pam_response **resp, void *appdata) {
+    (void)appdata;
+    struct pam_response *responses = calloc(num_msg,
+                                            sizeof(struct pam_response));
+    if (!responses) return PAM_BUF_ERR;
+
+    for (int i = 0; i < num_msg; i++) {
+        if (msg[i]->msg_style == PAM_ERROR_MSG) {
+            fprintf(stderr, "PAM error: %s\n", msg[i]->msg);
+        }
+        responses[i].resp = NULL;
+        responses[i].resp_retcode = 0;
+    }
+    *resp = responses;
+    return PAM_SUCCESS;
+}
+
 /* ---- Public API --------------------------------------------------------- */
 
 auth_result_t auth_authenticate(const char *username, const char *password,
@@ -115,8 +138,26 @@ auth_result_t auth_authenticate(const char *username, const char *password,
         return AUTH_ERROR;
     }
 
-    /* Return the PAM handle to the caller for later cleanup */
+    /*
+     * Replace the stack-local conversation with a heap-allocated no-op.
+     * This prevents a dangling pointer: conv_data and conv live on this
+     * function's stack frame, but the PAM handle persists until
+     * auth_close_session(). If any PAM module calls the conversation
+     * during pam_close_session, it must find a valid function pointer.
+     */
+    struct pam_conv *safe_conv = malloc(sizeof(struct pam_conv));
+    if (!safe_conv) {
+        pam_close_session(pamh, 0);
+        pam_end(pamh, PAM_BUF_ERR);
+        return AUTH_ERROR;
+    }
+    safe_conv->conv = noop_conversation;
+    safe_conv->appdata_ptr = NULL;
+    pam_set_item(pamh, PAM_CONV, safe_conv);
+
+    /* Return the PAM handle and conversation to the caller */
     session->pamh = pamh;
+    session->conv = safe_conv;
     return AUTH_SUCCESS;
 }
 
@@ -131,4 +172,8 @@ void auth_close_session(auth_session_t *session) {
 
     pam_end(session->pamh, PAM_SUCCESS);
     session->pamh = NULL;
+
+    /* Free the heap-allocated no-op conversation */
+    free(session->conv);
+    session->conv = NULL;
 }

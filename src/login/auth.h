@@ -18,9 +18,13 @@ typedef enum {
     AUTH_ERROR,
 } auth_result_t;
 
-/* Opaque session handle returned by auth_authenticate on success. */
+/* Opaque session handle returned by auth_authenticate on success.
+ * Owns the PAM handle and a heap-allocated conversation struct so
+ * the conversation pointer stored inside PAM remains valid until
+ * auth_close_session() is called.                                   */
 typedef struct {
-    pam_handle_t *pamh;
+    pam_handle_t   *pamh;
+    struct pam_conv *conv;   /* heap-allocated, lives as long as pamh */
 } auth_session_t;
 
 /*
