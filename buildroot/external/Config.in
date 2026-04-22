@@ -1,3 +1,4 @@
 source "$BR2_EXTERNAL_ELECTRONOS_PATH/package/electronos-boot/Config.in"
 source "$BR2_EXTERNAL_ELECTRONOS_PATH/package/electronos-login/Config.in"
 source "$BR2_EXTERNAL_ELECTRONOS_PATH/package/electronos-shell/Config.in"
+source "$BR2_EXTERNAL_ELECTRONOS_PATH/package/electronos-desktop/Config.in"
