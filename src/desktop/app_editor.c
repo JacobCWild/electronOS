@@ -462,8 +462,9 @@ static void editor_handle_key_cb(void *ctx, const SDL_Event *event) {
             e->cursor_col = e->lines[e->cursor_row].len;
     } else if (key->sym == SDLK_RETURN) {
         /* Split line at cursor */
-        editor_line_t *cur = &e->lines[e->cursor_row];
         insert_line(e, e->cursor_row + 1);
+        /* Re-derive pointers after insert_line, which may realloc e->lines */
+        editor_line_t *cur = &e->lines[e->cursor_row];
         editor_line_t *new_line = &e->lines[e->cursor_row + 1];
 
         /* Move text after cursor to new line */
