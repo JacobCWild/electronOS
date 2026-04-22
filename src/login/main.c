@@ -44,6 +44,9 @@ static void signal_handler(int sig) {
     g_running = 0;
 }
 
+/* ---- Desktop binary path ------------------------------------------------ */
+#define ELECTRONOS_DESKTOP  "/usr/bin/electronos-desktop"
+
 /* ---- Launch user session ------------------------------------------------ */
 static void launch_session(const char *username, const char *shell) {
     struct passwd *pw = getpwnam(username);
@@ -59,7 +62,7 @@ static void launch_session(const char *username, const char *shell) {
     }
 
     if (pid == 0) {
-        /* Child: set up environment and exec the user shell */
+        /* Child: set up environment and exec the desktop/shell */
         if (initgroups(pw->pw_name, pw->pw_gid) != 0) {
             perror("initgroups");
             _exit(1);
@@ -87,7 +90,14 @@ static void launch_session(const char *username, const char *shell) {
             }
         }
 
-        /* Execute shell as login shell */
+        /* Try to launch the graphical desktop first; fall back to shell */
+        if (access(ELECTRONOS_DESKTOP, X_OK) == 0) {
+            execl(ELECTRONOS_DESKTOP, "electronos-desktop", (char *)NULL);
+            /* If exec fails, fall through to shell */
+            perror("execl (desktop)");
+        }
+
+        /* Fallback: execute shell as login shell */
         const char *shell_basename = strrchr(shell, '/');
         if (shell_basename) {
             shell_basename++;

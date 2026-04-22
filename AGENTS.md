@@ -40,6 +40,7 @@ electronOS/
 ├── src/                         # Custom source code
 │   ├── boot/                    # Plymouth boot animation theme
 │   ├── login/                   # Graphical login manager (SDL2 + PAM)
+│   ├── desktop/                 # Graphical desktop (SDL2, liquid glass UI)
 │   ├── shell/                   # Interactive command shell (readline)
 │   └── security/                # Security hardening scripts (LUKS, AppArmor setup)
 ├── kernel/                      # Custom kernel code (minimal, mostly config)
@@ -57,6 +58,7 @@ electronOS/
 │   ├── external/                # Custom package definitions
 │   │   └── package/
 │   │       ├── electronos-boot/
+│   │       ├── electronos-desktop/
 │   │       ├── electronos-login/
 │   │       └── electronos-shell/
 │   └── board/electronos/        # Board support files
@@ -92,6 +94,23 @@ electronOS/
   - `auth.c/auth.h` — PAM integration, credential handling
   - `Makefile` — With hardened CFLAGS: `-fstack-protector-strong`, `-fPIE`, `-pie -Wl,-z,relro,-z,now`
 - **Dev Testing**: `cd src/login && make && ./electronos-login --test`
+
+### Desktop (`src/desktop/`)
+- **Purpose**: Graphical desktop environment with Ubuntu layout + Apple Liquid Glass aesthetic
+- **Technology**: SDL2 (graphics), SDL2_ttf (fonts), SDL2_image (images), PTY (terminal), C
+- **Key Files**:
+  - `main.c` — Entry point, SDL2 init, main event/render loop
+  - `desktop.c/desktop.h` — Desktop compositor: window management, panel, dock coordination
+  - `glass.c/glass.h` — Liquid glass effect: 3-pass box blur on wallpaper + translucent tint overlay
+  - `wallpaper.c/wallpaper.h` — Gradient wallpaper generation (blue/purple macOS-inspired)
+  - `panel.c/panel.h` — Top panel (Activities button, clock, system tray)
+  - `dock.c/dock.h` — Left dock (app icons, hover effects, running indicators)
+  - `window.c/window.h` — Window management (drag, resize, minimize, maximize, traffic-light buttons)
+  - `app_terminal.c/app_terminal.h` — PTY-based terminal emulator with VT100/ANSI parsing
+  - `app_settings.c/app_settings.h` — System settings (Display, Network, Security, About)
+  - `app_editor.c/app_editor.h` — Text editor (open, save, edit files)
+  - `Makefile` — Hardened build flags, links SDL2 + SDL2_ttf + SDL2_image + libutil
+- **Dev Testing**: `cd src/desktop && make && ./electronos-desktop --test`
 
 ### Shell (`src/shell/`)
 - **Purpose**: Interactive REPL with 30 commands, piping, tab completion, history

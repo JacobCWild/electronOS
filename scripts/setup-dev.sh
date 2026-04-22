@@ -89,6 +89,12 @@ make clean 2>/dev/null || true
 make
 echo -e "  ${GREEN}Shell built: src/shell/electronos-shell${NC}"
 
+echo -e "  Building desktop..."
+cd "${PROJECT_DIR}/src/desktop"
+make clean 2>/dev/null || true
+make
+echo -e "  ${GREEN}Desktop built: src/desktop/electronos-desktop${NC}"
+
 # ---- Set up test PAM config -----------------------------------------------
 echo -e "\n${CYAN}[3/3] Setting up test environment...${NC}"
 
@@ -117,6 +123,9 @@ echo "    cd src/login && ./electronos-login --test"
 echo ""
 echo "  Test the shell:"
 echo "    cd src/shell && ./electronos-shell"
+echo ""
+echo "  Test the desktop:"
+echo "    cd src/desktop && ./electronos-desktop --test"
 echo ""
 echo "  Full OS build:"
 echo "    make build"

@@ -1,0 +1,7 @@
+config BR2_PACKAGE_ELECTRONOS_DESKTOP
+	bool "electronos-desktop"
+	select BR2_PACKAGE_ELECTRONOS_SHELL
+	help
+	  Graphical desktop environment for electronOS.
+	  Ubuntu-style layout with Apple Liquid Glass aesthetic.
+	  Includes Terminal, Settings, and Text Editor apps.

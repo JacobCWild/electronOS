@@ -1,0 +1,90 @@
+# ============================================================================
+# AppArmor Profile: electronOS Desktop
+# ============================================================================
+# Sandbox for the graphical desktop environment.
+# Allows GPU access, font loading, and spawning child applications
+# (terminal, settings, text editor) while protecting critical system files.
+# ============================================================================
+
+#include <tunables/global>
+
+/usr/bin/electronos-desktop {
+    #include <abstractions/base>
+    #include <abstractions/fonts>
+    #include <abstractions/consoles>
+    #include <abstractions/nameservice>
+    #include <abstractions/X>
+
+    # Binary itself
+    /usr/bin/electronos-desktop   mr,
+
+    # Launch child applications
+    /usr/bin/electronos-shell     Px,
+    /usr/bin/*                    ix,
+    /bin/*                        ix,
+
+    # User home directory
+    owner @{HOME}/**              rw,
+    owner @{HOME}/                r,
+
+    # Fonts
+    /usr/share/fonts/**           r,
+    /etc/fonts/**                 r,
+    /var/cache/fontconfig/**      r,
+
+    # electronOS assets
+    /usr/share/electronos/**      r,
+
+    # GPU / DRM access
+    /dev/dri/**                   rw,
+    /dev/fb*                      rw,
+    /dev/input/**                 r,
+    /sys/class/drm/**             r,
+    /sys/devices/**               r,
+
+    # Read access to system info (for Settings app)
+    /etc/passwd                   r,
+    /etc/group                    r,
+    /etc/hostname                 r,
+    /etc/hosts                    r,
+    /etc/os-release               r,
+    /proc/**                      r,
+    /sys/**                       r,
+
+    # PTY access (for Terminal app)
+    /dev/tty*                     rw,
+    /dev/pts/**                   rw,
+    /dev/ptmx                     rw,
+
+    # Temporary files
+    /tmp/**                       rw,
+    /var/tmp/**                   rw,
+    /run/user/*/                  rw,
+
+    # Libraries
+    /usr/lib/**                   mr,
+    /lib/**                       mr,
+
+    # Shared memory (SDL2)
+    /dev/shm/**                   rw,
+    /dev/null                     rw,
+    /dev/zero                     r,
+    /dev/urandom                  r,
+
+    # Deny sensitive operations
+    deny /boot/** w,
+    deny /etc/shadow rw,
+    deny /etc/gshadow rw,
+    deny /etc/sudoers rw,
+    deny /etc/sudoers.d/** rw,
+    deny /proc/*/mem rw,
+    deny /proc/kcore rw,
+    deny /dev/kmem rw,
+    deny /dev/mem rw,
+
+    # Network (for Settings app info display)
+    network inet stream,
+    network inet dgram,
+    network inet6 stream,
+    network inet6 dgram,
+}
