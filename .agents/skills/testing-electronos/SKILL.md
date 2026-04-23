@@ -1,6 +1,6 @@
 # Testing electronOS Components
 
-This skill covers how to test the electronOS login manager and shell locally on a dev machine.
+This skill covers how to test the electronOS login manager, shell, and desktop environment locally on a dev machine.
 
 ## Prerequisites
 
@@ -9,7 +9,7 @@ This skill covers how to test the electronOS login manager and shell locally on 
 sudo apt-get install -y build-essential gcc make pkg-config \
   libsdl2-dev libsdl2-image-dev libsdl2-ttf-dev \
   libpam0g-dev libreadline-dev fonts-dejavu-core \
-  wmctrl
+  wmctrl xdotool
 ```
 
 ### PAM Configuration
@@ -37,9 +37,12 @@ cd src/login && make clean && make
 
 # Shell
 cd src/shell && make clean && make
+
+# Desktop
+cd src/desktop && make clean && make
 ```
 
-Both compile with `-Wall -Wextra -Werror`. The compiler IS the linter — zero warnings means clean code.
+All compile with `-Wall -Wextra -Werror`. The compiler IS the linter — zero warnings means clean code.
 
 ## Testing the Login Manager
 
@@ -110,15 +113,120 @@ DISPLAY=:0 konsole --noclose -e bash -c "cd /home/ubuntu/repos/electronOS/src/sh
 - `sysinfo` — prints system info table
 - `exit` — prints "Goodbye." and terminates
 
+## Testing the Desktop Environment
+
+### Launching the Desktop
+The desktop does NOT require sudo. The shell must be on PATH for the terminal app:
+```bash
+export PATH=/home/ubuntu/repos/electronOS/src/shell:$PATH
+cd src/desktop
+DISPLAY=:0 ./electronos-desktop --test >/tmp/desktop-stdout.log 2>/tmp/desktop-stderr.log &
+```
+
+### What `--test` Mode Does (Desktop)
+- Opens a 1280x720 windowed SDL2 window (not fullscreen)
+- Window title: "electronOS Desktop"
+- All apps launchable from the dock
+
+### Desktop UI Layout
+- **Top panel** (28px): "Activities" left, clock center, "Power" right
+- **Left dock** (56px wide): 3 icons — ">_" (Terminal), "*" (Settings), "A" (Text Editor)
+- **Wallpaper**: Purple gradient background
+- **Windows**: Glass titlebar (32px) with traffic-light buttons (red/yellow/green, 14px diameter)
+
+### Interacting with SDL Windows via xdotool
+The desktop is an SDL2 application inside an X11 window. To interact with it programmatically:
+
+1. **Find the X11 window**: `DISPLAY=:0 xdotool search --name "electronOS Desktop" getwindowgeometry --shell`
+2. **Focus it**: `wmctrl -i -a <WINDOW_ID>` or `DISPLAY=:0 xdotool windowactivate <WINDOW_ID>`
+3. **Click on SDL elements**: Calculate actual screen coordinates = SDL coords + X11 window position
+
+### Coordinate Mapping
+The computer tool screenshots may use a different resolution than the actual screen. To click precisely on SDL elements:
+
+1. Get actual screen resolution: `DISPLAY=:0 xdpyinfo | grep dimensions`
+2. Get SDL window position: `DISPLAY=:0 xdotool search --name "electronOS Desktop" getwindowgeometry --shell`
+3. Read the source code for element positions (constants in `window.h`, `dock.h`, `panel.h`)
+4. Calculate: `actual_screen_coords = SDL_coords + window_position`
+5. Use `DISPLAY=:0 xdotool mousemove --screen 0 <x> <y> && xdotool click 1`
+
+**Key constants:**
+- `PANEL_HEIGHT = 28` (panel.h)
+- `DOCK_WIDTH = 56` (dock.h)
+- `TITLEBAR_HEIGHT = 32` (window.h)
+- `WINDOW_BTN_SIZE = 14` (window.h)
+- `WINDOW_BTN_MARGIN = 8` (window.h)
+
+### Window Positioning
+Windows are cascaded. Position calculation (from `desktop.c`):
+```
+base_x = DOCK_WIDTH + 40 = 96
+base_y = PANEL_HEIGHT + 30 = 58
+offset = (next_window_id % 8) * 28
+window_x = base_x + offset
+window_y = base_y + offset
+```
+`next_window_id` starts at 1 and increments with each window created (does not decrement on close).
+
+### Close Button Coordinates
+For a window at SDL position (wx, wy):
+```
+close_center_x = wx + WINDOW_BTN_MARGIN + WINDOW_BTN_SIZE/2 = wx + 15
+close_center_y = wy + (TITLEBAR_HEIGHT - WINDOW_BTN_SIZE)/2 + WINDOW_BTN_SIZE/2 = wy + 16
+```
+Hit test radius: `WINDOW_BTN_SIZE/2 + 2 = 9` pixels.
+
+### Window Drag Testing
+SDL processes mouse events internally. The computer tool's `left_click_drag` may not trigger SDL's motion events properly. Use xdotool with incremental movements instead:
+```bash
+DISPLAY=:0 xdotool mousemove --screen 0 <titlebar_x> <titlebar_y>
+sleep 0.2
+DISPLAY=:0 xdotool mousedown 1
+sleep 0.2
+for i in $(seq 1 10); do
+  DISPLAY=:0 xdotool mousemove_relative -- 20 10
+  sleep 0.05
+done
+sleep 0.2
+DISPLAY=:0 xdotool mouseup 1
+```
+
+### Desktop Test Scenarios
+
+1. **Panel rendering**: Verify "Activities", clock (updates every second), "Power" text
+2. **Dock icons**: Click each icon to open Terminal, Settings, Text Editor
+3. **Terminal app**: Should launch electronos-shell in a PTY. Type commands and verify output
+4. **Settings app**: Click sidebar categories (Display, Network, Security, About). Each shows different content
+5. **Text Editor**: Type text, verify line numbers in gutter. Press Enter to create new lines
+6. **Window focus**: Open 2+ windows, click background window titlebar — it should come to front
+7. **Window close**: Click red traffic-light button — window should disappear
+8. **Window drag**: Drag titlebar — window should move
+
+### Dock Icon Click Positions (SDL coordinates)
+From `dock.c`, icon positions:
+```
+y_start = PANEL_HEIGHT + DOCK_PADDING + 4 = 28 + 8 + 4 = 40
+icon_y(index) = y_start + index * (DOCK_ICON_SIZE + DOCK_PADDING) = 40 + index * 48
+icon_x = (DOCK_WIDTH - DOCK_ICON_SIZE) / 2 = 8
+icon_center_x = 8 + 20 = 28
+```
+- Terminal (index 0): center SDL (28, 60)
+- Settings (index 1): center SDL (28, 108)
+- Editor (index 2): center SDL (28, 156)
+
 ## Devin Secrets Needed
 
 None — all testing is local. No external services or API keys required.
 
 ## Common Issues
 
-- **"SDL_Init failed: No available video device"**: Need `xhost +local:root` before running with sudo
+- **"SDL_Init failed: No available video device"**: Need `xhost +local:root` before running with sudo, or set `DISPLAY=:0`
 - **"Authorization required, but no authorization protocol specified"**: Same fix — `xhost +local:root`
 - **"XDG_RUNTIME_DIR not set"**: Pass `XDG_RUNTIME_DIR=/run/user/1000` when running with sudo
 - **PAM config missing after VM restart**: The `/etc/pam.d/electronos-login` file might not persist across session restarts — recreate it
 - **Guest user missing**: Recreate with `sudo useradd -m -s /bin/bash Guest && echo Guest:guest | sudo chpasswd`
 - **Logo not showing**: Make sure CWD is `src/login/` so the relative path `../../assets/electronOSlogo.png` resolves
+- **Desktop process killed after system restart**: Background processes don't survive VM restarts. Relaunch with the command above.
+- **Click not registering on SDL window**: Make sure the SDL window has focus. Use `wmctrl -i -a <WINDOW_ID>` to bring it to front. If another window (like konsole) is overlapping, it will intercept clicks.
+- **Computer tool clicks miss small SDL buttons**: Screen resolution scaling (e.g., 1600x1122 actual vs 1024x768 tool) can cause imprecise coordinate mapping. Use xdotool with calculated actual screen coordinates from `xdotool getwindowgeometry` + code constants instead.
+- **Window drag doesn't work via computer tool**: SDL processes mouse motion internally. Use xdotool with incremental `mousemove_relative` steps (see Window Drag Testing section above).
