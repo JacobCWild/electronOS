@@ -31,3 +31,6 @@ Thumbs.db
 # Temporary files
 /tmp/
 src/desktop/electronos-desktop
+
+# Neutron kernel build
+neutron/build/
